@@ -99,44 +99,67 @@ ast_tree *ast_tree_add(ast_tree *tree, ast_tree *add)
 	tree->children[tree->children_num - 1] = add;
 	return tree;
 }
+//语法分析错误
+ast_tree *parser_err(char *err)
+{
+	ast_tree *tree = new_tree();
+	ast_tag(tree, "error");
+	tree->contents = malloc(strlen(err) + 1);
+	strcpy(tree->contents, err);
+	return tree;
+}
 //分析 sexpr
 ast_tree *parser_sexpr(token_result *result)
 {
 	token *t;
-	ast_tree *tree = new_tree();
+	ast_tree *tree = new_tree(), *temp;
 	ast_tag(tree, "sexpr");
+    //读取前括号
+	t = next_token(result);
+	ast_tree_add(tree, parser_char(t->sym));
+	
 	while((t = next_token(result))){
-		if(t->type == TOKEN_SYM){
-			if(strcmp(t->sym, ")") == 0 || strcmp(t->sym, "(") == 0){
-				ast_tree_add(tree, parser_char(t->sym));
-				if(strcmp(t->sym, ")") == 0)
-				  return tree;
-				continue;
-			}
+		if(t->type == TOKEN_SYM && strcmp(t->sym, ")") == 0){
+			ast_tree_add(tree, parser_char(t->sym));
+			  return tree;
 		}
 		putback_token();
-		ast_tree_add(tree, parser_expr(result));
+		temp = parser_expr(result);
+		//出错则直接返回
+		if(strstr(temp->tag, "error"))
+		  return temp;
+		ast_tree_add(tree, temp);
 	}
+	return parser_err("error: miss the back quote!");
 
 }
 // 分析 qexpr
 ast_tree *parser_qexpr(token_result *result)
 {
 	token *t;
-	ast_tree *tree = new_tree();
+	ast_tree *tree = new_tree(), *temp;
 	ast_tag(tree, "qexpr");
+	//读取引号
+	t = next_token(result);
+	ast_tree_add(tree, parser_char(t->sym));
+	//检查是否为Q_EXPR
+	t = next_token(result);
+	if( t->type != TOKEN_SYM || strcmp(t->sym, "(") != 0)
+	  return parser_err("error : QEXPRSSION miss left brace");
+	else
+	  ast_tree_add(tree, parser_char(t->sym));
 	while((t = next_token(result))){
-		if(t->type == TOKEN_SYM){
-			if(strcmp(t->sym, ")") == 0 || strcmp(t->sym, "(") == 0 || strcmp(t->sym, "\'") == 0){
-				ast_tree_add(tree, parser_char(t->sym));
-				if(strcmp(t->sym, ")") == 0)
-				  return tree;
-				continue;
-			}
+		if(t->type == TOKEN_SYM && strcmp(t->sym, ")") == 0){
+			ast_tree_add(tree, parser_char(t->sym));
+			  return tree;
 		}
 		putback_token();
-		ast_tree_add(tree, parser_expr(result));
+		temp = parser_expr(result);
+		if(strstr(temp->tag, "error"))
+		  return temp;
+		ast_tree_add(tree, temp);
 	}
+	return parser_err("error: miss the back quote!");
 }
 
 //分析 expr
@@ -156,7 +179,7 @@ ast_tree *parser_expr(token_result *result)
 	if(t->type == TOKEN_SYM){
 		if(strcmp(t->sym, "(") == 0){
 			putback_token();
-			return parser_sexpr(result);
+		    return  parser_sexpr(result);
 		}
 		if(strcmp(t->sym, "'") == 0){
 			putback_token();
@@ -185,9 +208,15 @@ void ast_print(ast_tree * t, int len)
 	int i = 0;
 	ast_tree *child;
 	
-	if(len == 0)
+	if(len == 0 && t->children_num != 0)
 	  printf("root|>:\n");
-
+    for(i = 0; i < t->children_num; i++){
+		child = t->children[i];
+		if(strstr(child->tag, "error")){
+		  printf("error: %s\n", child->contents);
+		  return;
+		}
+	}
 	for(i = 0; i < t->children_num; i++){
 		child = t->children[i];
 		if(strstr(child->tag, "symbol") || strstr(child->tag, "char"))
@@ -210,8 +239,12 @@ void free_ast_tree(ast_tree *t)
 	ast_tree *child;
 	for(i = 0; i < t->children_num; i++){
 	  child = t->children[i];
-		if(strstr(child->tag,"num") || strstr(child->tag, "symbol") || strstr(child->tag, "char"))
+		if(strstr(child->tag,"num"))
 		  free(child);
+		else if(strstr(child->tag, "symbol") || strstr(child->tag, "char") || strstr(child->tag, "error")){
+			free(child->contents);
+			free(child);
+		}
 		else
 		  free_ast_tree(child);
 	}
