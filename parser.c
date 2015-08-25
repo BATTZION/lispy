@@ -14,25 +14,15 @@
 #include <string.h>
 #include "lispy.h"
 
-struct ast_tree{
-	//节点类型
-	char *tag;
-    //节点内容
-	char *contents;
-	double num;
-	//子节点数目
-	int children_num;
-	//子节点
-	ast_tree **children;
-};
 static int sp = 0;
 
 void ast_add_tag(ast_tree *a, const char *tag)
 {
-	a->tag = realloc(a->tag, strlen(tag) + 1 + strlen(a->tag) + 1);
-	memmove(a->tag + strlen(tag) + 1, a->tag, strlen(a->tag)+1);
-	memmove(a->tag, tag, strlen(tag));
-	memmove(a->tag + strlen(tag), "|", 1);
+	int l = strlen(a->tag);
+	a->tag = realloc(a->tag, strlen(tag) + 1 + l + 1);
+	memmove(a->tag + l + 1, tag, strlen(tag));
+	a->tag[l] = '|';
+	a->tag[l+1+strlen(tag)] = 0;
 }
 
 void ast_tag(ast_tree *tree, const char *tag)
@@ -130,7 +120,7 @@ ast_tree *parser_sexpr(token_result *result)
 		  return temp;
 		ast_tree_add(tree, temp);
 	}
-	return parser_err("error: miss the back quote!");
+	return parser_err("miss the back quote!");
 
 }
 // 分析 qexpr
@@ -145,7 +135,7 @@ ast_tree *parser_qexpr(token_result *result)
 	//检查是否为Q_EXPR
 	t = next_token(result);
 	if( t->type != TOKEN_SYM || strcmp(t->sym, "(") != 0)
-	  return parser_err("error : QEXPRSSION miss left brace");
+	  return parser_err("QEXPRSSION miss left brace");
 	else
 	  ast_tree_add(tree, parser_char(t->sym));
 	while((t = next_token(result))){
@@ -159,7 +149,7 @@ ast_tree *parser_qexpr(token_result *result)
 		  return temp;
 		ast_tree_add(tree, temp);
 	}
-	return parser_err("error: miss the back quote!");
+	return parser_err("miss the back quote!");
 }
 
 //分析 expr
@@ -193,15 +183,27 @@ ast_tree *parser_expr(token_result *result)
 	}
 }
 
-ast_tree *parser(token_result *result)
+int parser(token_result *result, ast_tree **tree)
 {
-	ast_tree *tree = new_tree();
-	ast_tag(tree, "root");
+	int i;
+    *tree = new_tree();
+	ast_tag(*tree, "root");
 	ast_tree *children;
-
-	while((children = parser_expr(result)))
-	  ast_tree_add(tree, children);
-	return tree;
+    
+	while((children = parser_expr(result))){
+		if(strstr(children->tag, "error")){
+			ast_tree *n = parser_err(children->contents);
+			free_ast_tree(*tree);
+			*tree = n;
+			return 0;
+		}
+		ast_tree_add(*tree, children);
+	}
+	return 1;
+}
+void ast_print_err(ast_tree *t)
+{
+	printf("Error : %s\n", t->contents);
 }
 void ast_print(ast_tree * t, int len)
 {

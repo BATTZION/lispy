@@ -11,6 +11,7 @@ int main(int argc, char **argv)
 	
 	token_result *result;
 	ast_tree *t;
+	lval *v;
 	while(1){
 		char *input = readline("lispy> ");
 		add_history(input);
@@ -19,13 +20,18 @@ int main(int argc, char **argv)
 			return 0;
 		}
 		result = tokenizer(input);
-	   //print_token_result(result);
-        
-		
-		t =parser(result);
-		ast_print(t, 0);
-		free_ast_tree(t);
-		free_token_result(result);
+		if(parser(result, &t)){
+			v = lval_eval(lval_read(t));
+			lval_print(v);
+			lval_del(v);
+			free_ast_tree(t);
+			free_token_result(result);
+		}
+		else{
+			ast_print_err(t);
+			free_token_result(result);
+			free_ast_tree(t);
+		}
 		free(input);
 	}
 	return 0;

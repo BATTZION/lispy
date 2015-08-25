@@ -10,21 +10,6 @@
 #define MAX_LINE 256 
 
 char *symbol = "(\\)\'+-*/" ;
-enum {TOKEN_NUM, TOKEN_SYM};
-
-struct token{
-	int type;
-	double num;
-	char *sym;
-};
-/* 
- * 词法分析器,返回值
- */
-struct token_result{
-	int count;
-	token **cell;
-};
-
 token *token_num(double num)
 {
 	token *result = (token *)malloc(sizeof(token));
@@ -64,7 +49,7 @@ int is_symbol(char c)
 	return (strchr(symbol, c) == NULL) ? 0 : 1;
 }
 
-char *next_token(char *s, char *d)
+static char *next_token(char *s, char *d)
 {
 	int i = 0, len, j = 0;
 	len = strlen(s);
