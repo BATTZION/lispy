@@ -39,26 +39,54 @@ token_result *tokenizer(char *s);
 void print_token_result(token_result *out);
 void free_token_result(token_result *s);
 
-int  parser(token_result *result, ast_tree **re);
+int  parser(ast_tree **re, char *s);
 void ast_print(ast_tree *, int);
 void free_ast_tree(ast_tree *);
 void ast_print_err(ast_tree*);
 
 
 struct lval;
+struct lenv;
 typedef struct lval lval;
+typedef struct lenv lenv;
+typedef lval *(*builtin_fun)(lenv *, lval *);
 struct lval{
 	int type;
-	double num;
 
+	/* Basic */
+	double num;
 	char *err;
 	char *sym;
+    
+	/* Function */
+    builtin_fun builtin_fun;
+	lenv *env;
+	lval *formals;
+	lval *body;
 
+	/* Expression */
 	int count;
 	struct lval **cell;
 	
 };
-lval *lval_eval(lval *);
+lval *lval_eval(lenv *a, lval *b);
 lval *lval_read(ast_tree *);
 void  lval_del(lval *);
 void  lval_print(lval *);
+
+//lisp环境
+struct lenv{
+	int count;
+	
+	/* parents environment */
+	
+	lenv *parent;
+	
+	//符号表
+	char **symbol;
+	lval **value;
+};
+
+lenv *lenv_init();
+void lenv_del();
+

@@ -183,8 +183,9 @@ ast_tree *parser_expr(token_result *result)
 	}
 }
 
-int parser(token_result *result, ast_tree **tree)
+int parser(ast_tree **tree, char *input)
 {
+	token_result *result = tokenizer(input);
 	int i;
     *tree = new_tree();
 	ast_tag(*tree, "root");
@@ -199,6 +200,7 @@ int parser(token_result *result, ast_tree **tree)
 		}
 		ast_tree_add(*tree, children);
 	}
+	free_token_result(result);
 	return 1;
 }
 void ast_print_err(ast_tree *t)
