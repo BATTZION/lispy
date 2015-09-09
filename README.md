@@ -6,4 +6,4 @@ S_EXPRESSION
 >
  Q_EXPRESSION
 
-###当前进度:完成 lambda 算子
+###当前进度:完成 函数定义
