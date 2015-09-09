@@ -449,17 +449,27 @@ lval *builtin_def(lenv *e, lval *a)
 		lval_del(a);
 		return lval_err("Function 'define' passed too many arguments");
 	}
-	lval *s = lval_pop(a, 0);
-	if(s->type != LVAL_VAL){
+	if(a->cell[0]->type != LVAL_VAL){
 		lval_del(a);
-		lval_del(s);
 		return lval_err("Function 'define' passed incorrect types");
 	}
-	s->type = LVAL_SYM;
-	lenv_put(e, s, a->cell[0]);
-	lval_del(s);
-	s = lval_take(a, 0);
-	return s;
+	if(a->cell[0]->count > 0){
+		lval *f = lval_pop(a->cell[0], 0);
+		a->cell[0]->type = LVAL_QEXPR;
+		a->cell[1]->type = LVAL_QEXPR;
+		lval *lambda = builtin_lambda(e, a);
+		lenv_put(e, f, lambda);
+		lval_del(f);
+		return lambda;
+	}
+	else{
+		lval *s = lval_pop(a, 0);
+		s->type = LVAL_SYM;
+		lenv_put(e, s, a->cell[0]);
+		lval_del(s);
+		s = lval_take(a, 0);
+		return s;
+	}
 }
 lval *lval_builtin(lenv *a, lval *b, builtin_fun func)
 {
@@ -467,11 +477,19 @@ lval *lval_builtin(lenv *a, lval *b, builtin_fun func)
 }
 void judge_define_lambda(lval *s)
 {
+	int i;
 	//判断是否为define 或 lambda 表达式
 	if( s->count > 2 && s->cell[0]->type == LVAL_SYM){
 		/* define */
-		if(strcmp(s->cell[0]->sym, "define") == 0)
-		  s->cell[1]->type = LVAL_VAL;
+		if(strcmp(s->cell[0]->sym, "define") == 0){
+			if(s->cell[1]->type == LVAL_SYM)
+			  s->cell[1]->type = LVAL_VAL;
+			else{
+				for( i = 1; i < s->count; i++){
+					s->cell[i]->type = LVAL_VAL;
+				}
+			}
+		}
         
 		/* lambda */
 		if(strcmp(s->cell[0]->sym, "lambda") == 0){
