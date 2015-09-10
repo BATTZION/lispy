@@ -3,7 +3,7 @@
 #include <malloc.h>
 #include "lispy.h"
 
-enum {LVAL_NUM, LVAL_SYM, LVAL_ERR, LVAL_SEXPR, LVAL_QEXPR, LVAL_FUN, LVAL_VAL};
+enum {LVAL_NUM, LVAL_SYM, LVAL_ERR, LVAL_SEXPR, LVAL_QEXPR, LVAL_FUN, LVAL_VAL, LVAL_AUG};
 
 lval *lval_number(double num)
 {
@@ -243,6 +243,7 @@ void lval_del(lval *value)
 	}
 	free(value);
 }
+
 lval *lval_pop(lval *l, int i)
 {
 	lval *x =l->cell[i];
@@ -251,6 +252,7 @@ lval *lval_pop(lval *l, int i)
 	l->cell = realloc(l->cell,sizeof(lval*) *l->count);
 	return x;
 }
+
 lval *lval_take(lval *l, int i)
 {
 	lval *x = lval_pop(l, i);
@@ -449,11 +451,11 @@ lval *builtin_def(lenv *e, lval *a)
 		lval_del(a);
 		return lval_err("Function 'define' passed too many arguments");
 	}
-	if(a->cell[0]->type != LVAL_VAL){
+	if(a->cell[0]->type != LVAL_VAL && a->cell[0]->type != LVAL_AUG){
 		lval_del(a);
 		return lval_err("Function 'define' passed incorrect types");
 	}
-	if(a->cell[0]->count > 0){
+	if(a->cell[0]->type == LVAL_AUG){
 		lval *f = lval_pop(a->cell[0], 0);
 		a->cell[0]->type = LVAL_QEXPR;
 		a->cell[1]->type = LVAL_QEXPR;
@@ -486,7 +488,7 @@ void judge_define_lambda(lval *s)
 			  s->cell[1]->type = LVAL_VAL;
 			else{
 				for( i = 1; i < s->count; i++){
-					s->cell[i]->type = LVAL_VAL;
+					s->cell[i]->type = LVAL_AUG;
 				}
 			}
 		}
