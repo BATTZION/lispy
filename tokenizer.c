@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #define MAX_LINE 256 
 
-char *symbol = "(\\)\'+-*/" ;
+char *symbol = "(\\)\'+-*/=><" ;
 token *token_num(double num)
 {
 	token *result = (token *)malloc(sizeof(token));
@@ -61,13 +61,18 @@ static char *next_token(char *s, char *d)
 	if(i == len || line[i] == '\n')
 	  return NULL;
 
-	if(is_symbol(line[i])){
+	if(is_symbol(line[i]) && line[i]!= '-'){
+		d[j++] = line[i];
+		d[j] = '\0';
+		return line + i + 1;
+	}
+	if(line[i] == '-' && (line[i+1] < '0' || line[i+1] > '9')){
 		d[j++] = line[i];
 		d[j] = '\0';
 		return line + i + 1;
 	}
 	while(i < len && line[i] != '\n' && line[i] != ' '){
-		if(is_symbol(line[i])){
+		if(is_symbol(line[i]) && !(line[i] == '-' && line[i+1] >= '0' && line[i+1] <= '9')){
 			d[j] = 0;
 			return line+i;
 		}
@@ -79,6 +84,8 @@ static char *next_token(char *s, char *d)
 int is_double(char *s)
 {
 	int i = 0, len = strlen(s), num_dot = 0;
+	if(s[i] == '-' && len > 1)
+	  i++;
 	while(i< len){
 		if(s[i] >= '0' && s[i] <= '9')
 		  i++;
