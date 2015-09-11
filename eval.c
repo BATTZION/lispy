@@ -428,7 +428,72 @@ lval *builtin_lambda(lenv *e, lval *b)
 	return lval_lambda(formals, body);
 
 }
+lval *builtin_greater(lenv *e, lval *c)
+{
+	if(c->count != 2){
+		lval_del(c);
+		return lval_err("Function '>' passed wrong number of arguments");
+	}
+	lval *a = lval_pop(c, 0);
+	lval *b = lval_take(c, 0);
+	if(a->type != LVAL_NUM || b->type != LVAL_NUM){
+		lval_del(a);
+		lval_del(b);
+		return lval_err("Function '>' passed incorrect type");
+	}
+	if(a->num - b->num > 0)
+	  return lval_number(1);
+	else
+	  return lval_number(0);
+}
+lval *builtin_equal(lenv *e, lval *c)
+{
+	if(c->count != 2){
+		lval_del(c);
+		return lval_err("Function '>' passed wrong number of arguments");
+	}
+	lval *a = lval_pop(c, 0);
+	lval *b = lval_take(c, 0);
+	if(a->type != LVAL_NUM || b->type != LVAL_NUM){
+		lval_del(a);
+		lval_del(b);
+		return lval_err("Function '>' passed incorrect type");
+	}
+	if(a->num - b->num == 0)
+	  return lval_number(1);
+	else
+	  return lval_number(0);
+}
 
+lval *builtin_lesser(lenv *e, lval *c)
+{
+	if(c->count != 2){
+		lval_del(c);
+		return lval_err("Function '>' passed wrong number of arguments");
+	}
+	lval *a = lval_pop(c, 0);
+	lval *b = lval_take(c, 0);
+	if(a->type != LVAL_NUM || b->type != LVAL_NUM){
+		lval_del(a);
+		lval_del(b);
+		return lval_err("Function '>' passed incorrect type");
+	}
+	if(a->num - b->num < 0)
+	  return lval_number(1);
+	else
+	  return lval_number(0);
+}
+lval *builtin_if(lenv *a, lval *b)
+{
+	if(b->count != 2){
+		lval_del(b);
+		return lval_err("Function 'if' passed wrong number of arguments");
+	}
+	if( b->cell[0]->num == 1)
+	  return lval_take(b, 1);
+	else
+	  return lval_symbol("NULL");
+}
 lval *builtin_add(lenv *a, lval *b)
 {
 	return builtin_arithmetic(b, "+");
@@ -560,6 +625,12 @@ lenv *lenv_init()
     lenv_add_builtin(e, "-", builtin_sub);
     lenv_add_builtin(e, "*", builtin_mul);
     lenv_add_builtin(e, "/", builtin_div);
+	/* Logic Function */
+	lenv_add_builtin(e, ">", builtin_greater);
+	lenv_add_builtin(e, "=", builtin_equal);
+	lenv_add_builtin(e, "<", builtin_lesser);
+	/* logic control*/
+	lenv_add_builtin(e, "if", builtin_if);
 	
 	return e; 
 }
